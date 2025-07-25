@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: aamira-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    environment:
+      MONGO_INITDB_DATABASE: aamira-courier
+
+  server:
+    build: 
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: aamira-server
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mongodb:27017/aamira-courier
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      API_TOKEN: demo-token-123
+      CLIENT_URL: http://localhost:5173
+    volumes:
+      - ./server/logs:/app/logs
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: aamira-client
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - server
+    environment:
+      VITE_API_URL: http://localhost:3000/api
+
+volumes:
+  mongodb_data:

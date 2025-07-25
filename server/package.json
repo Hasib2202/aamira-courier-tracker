@@ -1,0 +1,20 @@
+{
+  "name": "aamira-courier-server",
+  "version": "1.0.0",
+  "description": "Aamira Courier Package Tracker - Backend API",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "seed": "node scripts/demo-data.js"
+  },
+  "keywords": ["courier", "package-tracking", "real-time"],
+  "author": "Hasib",
+  "license": "MIT"
+}
