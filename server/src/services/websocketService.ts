@@ -90,9 +90,24 @@ export class WebSocketService {
   }
 
   emitPackageUpdate(update: PackageUpdatePayload): void {
+    // ✅ FIXED: Ensure proper data structure and validate required fields
+    if (!update.packageId || !update.status) {
+      logger.error('Invalid package update payload:', update);
+      return;
+    }
+
     const updateData = {
       type: 'package_updated',
-      data: update,
+      data: {
+        packageId: update.packageId,
+        status: update.status,
+        lat: update.lat,
+        lon: update.lon,
+        lastUpdated: update.lastUpdated,
+        note: update.note,
+        eta: update.eta,
+        isActive: update.isActive
+      },
       timestamp: new Date()
     };
 
@@ -106,9 +121,15 @@ export class WebSocketService {
     // }
     
     logger.info(`Emitted package update for ${update.packageId} to ${this.connectedClients.size} clients`);
+    logger.debug('WebSocket payload:', JSON.stringify(updateData, null, 2));
   }
 
   emitAlert(alert: Alert): void {
+    if (!alert.id || !alert.message) {
+      logger.error('Invalid alert payload:', alert);
+      return;
+    }
+
     const alertData = {
       type: 'new_alert',
       data: alert,
@@ -117,6 +138,20 @@ export class WebSocketService {
 
     this.io.to('dispatchers').emit('new_alert', alertData);
     logger.info(`Emitted alert ${alert.id} to dispatchers`);
+  }
+
+  // ✅ NEW: Helper method to create proper package update payload
+  createPackageUpdatePayload(apiData: any): PackageUpdatePayload {
+    return {
+      packageId: apiData.package_id || apiData.packageId,
+      status: apiData.status,
+      lat: apiData.lat,
+      lon: apiData.lon,
+      lastUpdated: apiData.timestamp ? new Date(apiData.timestamp) : new Date(),
+      note: apiData.note,
+      eta: apiData.eta ? new Date(apiData.eta) : undefined,
+      isActive: !['DELIVERED', 'CANCELLED'].includes(apiData.status)
+    };
   }
 
   broadcastMessage(event: string, data: any): void {
