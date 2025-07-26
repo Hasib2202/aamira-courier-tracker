@@ -1,4 +1,3 @@
-// src/types/package.ts
 export enum PackageStatus {
   CREATED = 'CREATED',
   PICKED_UP = 'PICKED_UP',
@@ -19,6 +18,7 @@ export interface Package {
   isActive: boolean;
   timeSinceLastUpdate: number;
   createdAt: string;
+  note?: string;
 }
 
 export interface PackageEvent {
@@ -41,17 +41,31 @@ export interface PackageDetail {
 export interface Alert {
   id: string;
   packageId: string;
-  type: 'STUCK_PACKAGE';
+  type: 'STUCK_PACKAGE' | 'DELAYED' | 'EXCEPTION';
   message: string;
   timestamp: string;
   acknowledged: boolean;
 }
 
 export interface User {
+  id: string;
   email: string;
-  role: 'courier' | 'dispatcher';
+  name: string;
+  role: 'courier' | 'dispatcher' | 'admin';
 }
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
 
-
-
+export interface DashboardFilters {
+  search?: string;
+  status?: PackageStatus | 'all';
+  activeOnly?: boolean;
+  limit?: number;
+  offset?: number;
+}
