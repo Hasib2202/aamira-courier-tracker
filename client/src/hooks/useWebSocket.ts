@@ -1,63 +1,48 @@
-// src/hooks/useWebSocket.ts
-import { useEffect, useRef, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
-import toast from 'react-hot-toast';
-import { Alert } from '../types/package';
+// client/src/hooks/useWebSocket.ts
+import { useState, useEffect, useRef } from 'react';
 
 interface WebSocketMessage {
   type: string;
-  data: unknown;
+  data: any;
 }
 
-export function useWebSocket(url?: string | null) {
-  const [isConnected, setIsConnected] = useState(false);
+export const useWebSocket = () => {
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
-  const socketRef = useRef<Socket | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    if (!url) return;
+    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3000';
+    
+    try {
+      wsRef.current = new WebSocket(wsUrl);
+      
+      wsRef.current.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          setLastMessage(message);
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      };
 
-    // Connect to WebSocket
-    const socket = io(url.replace('ws://', 'http://'), {
-      transports: ['websocket', 'polling'],
-    });
+      wsRef.current.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
 
-    socketRef.current = socket;
+      wsRef.current.onclose = () => {
+        console.log('WebSocket connection closed');
+      };
 
-    socket.on('connect', () => {
-      setIsConnected(true);
-      socket.emit('join_dispatcher');
-      toast.success('Connected to live updates');
-    });
-
-    socket.on('disconnect', () => {
-      setIsConnected(false);
-      toast.error('Disconnected from live updates');
-    });
-
-    socket.on('package_updated', (data) => {
-      setLastMessage({ type: 'package_updated', data });
-      toast.success(`Package ${data.packageId} updated to ${data.status}`);
-    });
-
-    socket.on('new_alert', (alert: Alert) => {
-      setLastMessage({ type: 'new_alert', data: alert });
-      toast.error(`Alert: ${alert.message}`, { duration: 6000 });
-    });
-
-    socket.on('connection_established', (data) => {
-      console.log('WebSocket connection established:', data);
-    });
+    } catch (error) {
+      console.error('Failed to connect to WebSocket:', error);
+    }
 
     return () => {
-      socket.disconnect();
-      socketRef.current = null;
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
     };
-  }, [url]);
+  }, []);
 
-  return {
-    isConnected,
-    lastMessage,
-    socket: socketRef.current,
-  };
-}
+  return { lastMessage };
+};

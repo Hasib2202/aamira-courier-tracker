@@ -1,56 +1,58 @@
-// src/contexts/AlertContext.tsx
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Alert } from '../types/package';
-import { useWebSocket } from '../hooks/useWebSocket';
+// client/src/contexts/AlertContext.tsx
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+
+interface Alert {
+  id: string;
+  message: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  timestamp: Date;
+}
 
 interface AlertContextType {
   alerts: Alert[];
-  acknowledgeAlert: (alertId: string) => void;
-  clearAlert: (alertId: string) => void;
+  addAlert: (alert: Omit<Alert, 'id' | 'timestamp'>) => void;
+  removeAlert: (id: string) => void;
 }
 
 const AlertContext = createContext<AlertContextType | undefined>(undefined);
 
-export function AlertProvider({ children }: { children: ReactNode }) {
+export const AlertProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const { lastMessage } = useWebSocket();
 
-  useEffect(() => {
-    if (lastMessage?.type === 'new_alert') {
-      const newAlert = lastMessage.data as Alert;
-      setAlerts(prev => {
-        // Avoid duplicates
-        if (prev.some(alert => alert.id === newAlert.id)) {
-          return prev;
-        }
-        return [newAlert, ...prev];
-      });
-    }
-  }, [lastMessage]);
+  const addAlert = (alert: Omit<Alert, 'id' | 'timestamp'>) => {
+    const newAlert: Alert = {
+      ...alert,
+      id: Math.random().toString(36).substr(2, 9),
+      timestamp: new Date(),
+    };
+    setAlerts(prev => [...prev, newAlert]);
 
-  const acknowledgeAlert = (alertId: string) => {
-    setAlerts(prev =>
-      prev.map(alert =>
-        alert.id === alertId ? { ...alert, acknowledged: true } : alert
-      )
-    );
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      removeAlert(newAlert.id);
+    }, 5000);
   };
 
-  const clearAlert = (alertId: string) => {
-    setAlerts(prev => prev.filter(alert => alert.id !== alertId));
+  const removeAlert = (id: string) => {
+    setAlerts(prev => prev.filter(alert => alert.id !== id));
   };
 
   return (
-    <AlertContext.Provider value={{ alerts, acknowledgeAlert, clearAlert }}>
+    <AlertContext.Provider value={{ alerts, addAlert, removeAlert }}>
       {children}
     </AlertContext.Provider>
   );
-}
+};
 
-export function useAlerts() {
+export const useAlerts = () => {
   const context = useContext(AlertContext);
   if (context === undefined) {
-    throw new Error('useAlerts must be used within an AlertProvider');
+    // Fallback for when context is not available
+    return {
+      alerts: [],
+      addAlert: () => {},
+      removeAlert: () => {}
+    };
   }
   return context;
-}
+};
