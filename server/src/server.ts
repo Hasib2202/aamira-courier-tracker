@@ -20,14 +20,18 @@ dotenv.config();
 const app: Express = express();
 const server = createServer(app);
 
-// ✅ FIXED: Allow multiple origins for CORS
-const allowedOrigins = [
+// ✅ FIXED: Allow multiple origins for both development and production
+const allowedOrigins: string[] = [
   'http://localhost:5173',                              // Local development
   'http://localhost:3000',                              // Alternative local port
-  'https://aamira-courier-tracker.vercel.app',          // Your Vercel production URL
-  'https://aamira-courier-client.vercel.app',           // Alternative Vercel URL pattern
-  process.env.CLIENT_URL                                // Environment variable override
-].filter(Boolean); // Remove any undefined values
+  'https://aamira-courier-tracker.vercel.app',          // Production Vercel URL
+  'https://aamira-courier-client.vercel.app',           // Alternative Vercel URL
+];
+
+// Add CLIENT_URL from environment if it exists and isn't already included
+if (process.env.CLIENT_URL && !allowedOrigins.includes(process.env.CLIENT_URL)) {
+  allowedOrigins.push(process.env.CLIENT_URL);
+}
 
 const io = new SocketIOServer(server, {
   cors: {
@@ -37,7 +41,8 @@ const io = new SocketIOServer(server, {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+// ✅ FIXED: Ensure PORT is properly typed as number
+const PORT = parseInt(process.env.PORT || '3000', 10);
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/aamira-courier';
 
 // Initialize services
@@ -47,13 +52,13 @@ const alertService = new AlertService(websocketService);
 // Middleware
 app.use(helmet());
 
-// ✅ FIXED: CORS configuration to allow multiple origins
+// ✅ FIXED: Enhanced CORS configuration with multiple origins
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    // Allow requests with no origin (like mobile apps, Postman, curl)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       logger.warn(`CORS blocked request from origin: ${origin}`);
@@ -74,7 +79,7 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging
+// ✅ ENHANCED: Better request logging with origin tracking
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.path}`, {
     ip: req.ip,
@@ -84,22 +89,25 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check
+// ✅ ENHANCED: Health check with more debugging info
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    allowedOrigins: allowedOrigins
+    environment: process.env.NODE_ENV,
+    allowedOrigins: allowedOrigins,
+    port: PORT
   });
 });
 
-// Base route
+// ✅ ADDED: Root route for API info
 app.get('/', (req, res) => {
   res.json({
     message: 'Aamira Courier API',
     version: '1.0.0',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
@@ -124,8 +132,9 @@ mongoose.connect(MONGODB_URI)
   .then(() => {
     logger.info('Connected to MongoDB');
     logger.info('Allowed CORS origins:', allowedOrigins);
+    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
     
-    // Start server - bind to 0.0.0.0 for Render
+    // ✅ FIXED: Start server with proper host binding for Render
     server.listen(PORT, '0.0.0.0', () => {
       logger.info(`Server running on port ${PORT}`);
       logger.info(`WebSocket server initialized`);
