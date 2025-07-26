@@ -41,6 +41,12 @@ interface DashboardFilters {
 
 interface PackagesResponse {
   packages: PackageType[];
+  pagination?: {
+    total: number;
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
 }
 
 export function Dashboard() {
@@ -52,7 +58,7 @@ export function Dashboard() {
 
   const { alerts } = useAlerts();
 
-  // Fetch packages with react-query v5 syntax
+  // React Query v5 - removed onSuccess callback, using useEffect instead
   const {
     data: packagesData,
     isLoading,
@@ -67,9 +73,7 @@ export function Dashboard() {
       limit: 100,
     }),
     refetchInterval: 30000,
-    onSuccess: (data) => {
-      // State management handled via the data property directly
-    },
+    // onSuccess removed in v5 - handle data updates via useEffect
   });
 
   const packages = packagesData?.packages || [];
@@ -88,7 +92,7 @@ export function Dashboard() {
     setFilters(prev => ({ ...prev, ...newFilters }));
   };
 
-  const stuckPackages = packages.filter(pkg => {
+  const stuckPackages = packages.filter((pkg: PackageType) => {
     const thirtyMinutes = 30 * 60 * 1000;
     return pkg.timeSinceLastUpdate > thirtyMinutes && pkg.isActive;
   });
@@ -145,7 +149,7 @@ export function Dashboard() {
               The following packages haven't been updated in over 30 minutes:
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
-              {stuckPackages.map(pkg => (
+              {stuckPackages.map((pkg: PackageType) => (
                 <Link
                   key={pkg.packageId}
                   to={`/package/${pkg.packageId}`}
@@ -237,7 +241,7 @@ export function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {packages.map((pkg) => {
+                  {packages.map((pkg: PackageType) => {
                     const isStuck = pkg.timeSinceLastUpdate > 30 * 60 * 1000 && pkg.isActive;
                     
                     return (
@@ -308,7 +312,7 @@ export function Dashboard() {
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {Object.entries(STATUS_DISPLAY).map(([status, label]) => {
-            const count = packages.filter(pkg => pkg.currentStatus === status).length;
+            const count = packages.filter((pkg: PackageType) => pkg.currentStatus === status).length;
             return (
               <div key={status} className="bg-white rounded-lg shadow-sm border p-4">
                 <div className="flex items-center justify-between">
