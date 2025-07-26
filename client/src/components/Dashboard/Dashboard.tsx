@@ -66,25 +66,25 @@ export function Dashboard() {
   const { alerts } = useAlerts();
 
   // React Query v5 - removed onSuccess callback, using useEffect instead
-  const {
-    data: packagesData,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery<PackagesResponse>({
-    queryKey: ["packages", filters],
-    queryFn: () =>
-      packageApi.getPackages({
-        search: filters.search || undefined,
-        status: filters.status !== "all" ? filters.status : undefined,
-        active_only: filters.activeOnly,
-        limit: 100,
-      }),
-    refetchInterval: 30000,
-    // onSuccess removed - React Query v5 doesn't support it
-  });
+  const { 
+  data: packagesData,
+  isLoading,
+  error,
+  refetch
+} = useQuery<PackagesResponse>({
+  queryKey: ['packages', filters],
+  queryFn: () => packageApi.getPackages({
+    search: filters.search || undefined,
+    status: filters.status !== 'all' ? filters.status : undefined,
+    active_only: filters.activeOnly,
+    limit: 100,
+  }),
+  refetchInterval: 30000,
+});
 
-  const packages = packagesData?.packages || [];
+// Use packagesData directly instead of onSuccess
+const packages = packagesData?.packages || [];
+
 
   // Handle real-time package updates via WebSocket
   const { lastMessage } = useWebSocket();
