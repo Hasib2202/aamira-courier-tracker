@@ -14,7 +14,33 @@
     "test:coverage": "jest --coverage",
     "seed": "node scripts/demo-data.js"
   },
-  "keywords": ["courier", "package-tracking", "real-time"],
+  "keywords": [
+    "courier",
+    "package-tracking",
+    "real-time"
+  ],
   "author": "Hasib",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/joi": "^17.2.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/winston": "^2.4.4",
+    "tsx": "^4.20.3"
+  },
+  "dependencies": {
+    "@types/helmet": "^4.0.0",
+    "@types/node": "^24.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.16.5",
+    "node-cron": "^4.2.1",
+    "socket.io": "^4.8.1",
+    "winston": "^3.17.0"
+  }
 }
