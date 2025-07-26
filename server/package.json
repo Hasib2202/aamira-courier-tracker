@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc && cp -r src/views dist/", 
+    "build": "tsc && cp -r src/views dist/",
     "start": "node dist/server.js",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
@@ -20,7 +20,7 @@
     "real-time"
   ],
   "engines": {
-     "node": ">=20.0.0"
+    "node": ">=20.0.0"
   },
   "author": "Hasib",
   "license": "MIT",
@@ -35,6 +35,7 @@
   "dependencies": {
     "@types/helmet": "^4.0.0",
     "@types/node": "^24.1.0",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
