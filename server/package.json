@@ -20,7 +20,7 @@
     "real-time"
   ],
   "engines": {
-    "node": "18.x"  
+     "node": ">=20.0.0"
   },
   "author": "Hasib",
   "license": "MIT",
