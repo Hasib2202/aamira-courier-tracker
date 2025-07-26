@@ -1,42 +1,44 @@
 // src/components/PackageDetail/PackageDetail.tsx
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useQuery } from 'react-query';
-import { 
-  ArrowLeft, 
-  Package as PackageIcon, 
-  Clock, 
-  MapPin, 
+import React from "react";
+import { useParams, Link } from "react-router-dom";
+// import { useQuery } from 'react-query';
+import {
+  ArrowLeft,
+  Package as PackageIcon,
+  Clock,
+  MapPin,
   Calendar,
-  AlertTriangle 
-} from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
-import clsx from 'clsx';
+  AlertTriangle,
+} from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
+import clsx from "clsx";
 
-import { packageApi } from '../../api/packageApi';
-import { PackageStatus } from '../../types/package';
-import { LoadingSpinner } from '../UI/LoadingSpinner';
-import { ErrorBoundary } from '../UI/ErrorBoundary';
-import LocationMap from '../Map/LocationMap'; // New import
+import { packageApi } from "../../api/packageApi";
+import { PackageStatus } from "../../types/package";
+import { LoadingSpinner } from "../UI/LoadingSpinner";
+import { ErrorBoundary } from "../UI/ErrorBoundary";
+import LocationMap from "../Map/LocationMap"; // New import
+import { useQuery } from "@tanstack/react-query";
 
 const STATUS_COLORS: Record<PackageStatus, string> = {
-  [PackageStatus.CREATED]: 'bg-gray-100 text-gray-800 border-gray-200',
-  [PackageStatus.PICKED_UP]: 'bg-blue-100 text-blue-800 border-blue-200',
-  [PackageStatus.IN_TRANSIT]: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  [PackageStatus.OUT_FOR_DELIVERY]: 'bg-orange-100 text-orange-800 border-orange-200',
-  [PackageStatus.DELIVERED]: 'bg-green-100 text-green-800 border-green-200',
-  [PackageStatus.EXCEPTION]: 'bg-red-100 text-red-800 border-red-200',
-  [PackageStatus.CANCELLED]: 'bg-gray-100 text-gray-800 border-gray-200',
+  [PackageStatus.CREATED]: "bg-gray-100 text-gray-800 border-gray-200",
+  [PackageStatus.PICKED_UP]: "bg-blue-100 text-blue-800 border-blue-200",
+  [PackageStatus.IN_TRANSIT]: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  [PackageStatus.OUT_FOR_DELIVERY]:
+    "bg-orange-100 text-orange-800 border-orange-200",
+  [PackageStatus.DELIVERED]: "bg-green-100 text-green-800 border-green-200",
+  [PackageStatus.EXCEPTION]: "bg-red-100 text-red-800 border-red-200",
+  [PackageStatus.CANCELLED]: "bg-gray-100 text-gray-800 border-gray-200",
 };
 
 const STATUS_DISPLAY: Record<PackageStatus, string> = {
-  [PackageStatus.CREATED]: 'Created',
-  [PackageStatus.PICKED_UP]: 'Picked Up',
-  [PackageStatus.IN_TRANSIT]: 'In Transit',
-  [PackageStatus.OUT_FOR_DELIVERY]: 'Out for Delivery',
-  [PackageStatus.DELIVERED]: 'Delivered',
-  [PackageStatus.EXCEPTION]: 'Exception',
-  [PackageStatus.CANCELLED]: 'Cancelled',
+  [PackageStatus.CREATED]: "Created",
+  [PackageStatus.PICKED_UP]: "Picked Up",
+  [PackageStatus.IN_TRANSIT]: "In Transit",
+  [PackageStatus.OUT_FOR_DELIVERY]: "Out for Delivery",
+  [PackageStatus.DELIVERED]: "Delivered",
+  [PackageStatus.EXCEPTION]: "Exception",
+  [PackageStatus.CANCELLED]: "Cancelled",
 };
 
 const STATUS_ICONS: Record<PackageStatus, React.ReactNode> = {
@@ -57,14 +59,12 @@ export function PackageDetail() {
     isLoading,
     error,
     refetch,
-  } = useQuery(
-    ['package-detail', packageId],
-    () => packageApi.getPackageDetail(packageId!),
-    {
-      enabled: !!packageId,
-      refetchInterval: 30000, // Refresh every 30 seconds
-    }
-  );
+  } = useQuery({
+    queryKey: ["package-detail", packageId],
+    queryFn: () => packageApi.getPackageDetail(packageId!),
+    enabled: !!packageId,
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
 
   if (isLoading) {
     return (
@@ -130,7 +130,7 @@ export function PackageDetail() {
               <div>
                 <span
                   className={clsx(
-                    'inline-flex px-3 py-1 text-sm font-semibold rounded-full border',
+                    "inline-flex px-3 py-1 text-sm font-semibold rounded-full border",
                     STATUS_COLORS[pkg.currentStatus]
                   )}
                 >
@@ -143,7 +143,9 @@ export function PackageDetail() {
           <div className="px-6 py-4">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
               <div>
-                <h3 className="mb-1 text-sm font-medium text-gray-500">Last Updated</h3>
+                <h3 className="mb-1 text-sm font-medium text-gray-500">
+                  Last Updated
+                </h3>
                 <div className="flex items-center space-x-2">
                   <Clock className="w-4 h-4 text-gray-400" />
                   <span className="text-sm text-gray-900">
@@ -151,12 +153,14 @@ export function PackageDetail() {
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
-                  {format(new Date(pkg.lastUpdated), 'MMM d, yyyy h:mm a')}
+                  {format(new Date(pkg.lastUpdated), "MMM d, yyyy h:mm a")}
                 </p>
               </div>
 
               <div>
-                <h3 className="mb-1 text-sm font-medium text-gray-500">Current Location</h3>
+                <h3 className="mb-1 text-sm font-medium text-gray-500">
+                  Current Location
+                </h3>
                 {pkg.currentLat && pkg.currentLon ? (
                   <div className="flex items-center space-x-2">
                     <MapPin className="w-4 h-4 text-gray-400" />
@@ -165,17 +169,21 @@ export function PackageDetail() {
                     </span>
                   </div>
                 ) : (
-                  <span className="text-sm text-gray-400">No location data</span>
+                  <span className="text-sm text-gray-400">
+                    No location data
+                  </span>
                 )}
               </div>
 
               <div>
-                <h3 className="mb-1 text-sm font-medium text-gray-500">Estimated Delivery</h3>
+                <h3 className="mb-1 text-sm font-medium text-gray-500">
+                  Estimated Delivery
+                </h3>
                 {pkg.eta ? (
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-4 h-4 text-gray-400" />
                     <span className="text-sm text-gray-900">
-                      {format(new Date(pkg.eta), 'MMM d, h:mm a')}
+                      {format(new Date(pkg.eta), "MMM d, h:mm a")}
                     </span>
                   </div>
                 ) : (
@@ -184,7 +192,9 @@ export function PackageDetail() {
               </div>
 
               <div>
-                <h3 className="mb-1 text-sm font-medium text-gray-500">Status</h3>
+                <h3 className="mb-1 text-sm font-medium text-gray-500">
+                  Status
+                </h3>
                 <div className="text-sm text-gray-900">
                   {pkg.isActive ? (
                     <span className="text-green-600">Active</span>
@@ -204,8 +214,8 @@ export function PackageDetail() {
                 <h3 className="font-semibold text-red-800">Package Stuck</h3>
               </div>
               <p className="mt-1 text-red-700">
-                This package hasn't been updated in over 30 minutes 
-                ({Math.floor(pkg.timeSinceLastUpdate / 60000)} minutes ago).
+                This package hasn't been updated in over 30 minutes (
+                {Math.floor(pkg.timeSinceLastUpdate / 60000)} minutes ago).
               </p>
             </div>
           )}
@@ -214,7 +224,9 @@ export function PackageDetail() {
         {/* Event Timeline */}
         <div className="bg-white border rounded-lg shadow-sm">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Event Timeline</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Event Timeline
+            </h2>
             <p className="mt-1 text-sm text-gray-600">
               {events.length} events recorded
             </p>
@@ -239,9 +251,11 @@ export function PackageDetail() {
                       {/* Status icon */}
                       <div
                         className={clsx(
-                          'flex items-center justify-center w-12 h-12 rounded-full border-2 bg-white',
-                          STATUS_COLORS[event.status].replace('bg-', 'border-').replace('text-', 'text-'),
-                          'shadow-sm'
+                          "flex items-center justify-center w-12 h-12 rounded-full border-2 bg-white",
+                          STATUS_COLORS[event.status]
+                            .replace("bg-", "border-")
+                            .replace("text-", "text-"),
+                          "shadow-sm"
                         )}
                       >
                         {STATUS_ICONS[event.status]}
@@ -255,12 +269,16 @@ export function PackageDetail() {
                               {STATUS_DISPLAY[event.status]}
                             </h3>
                             <p className="text-sm text-gray-500">
-                              {format(new Date(event.eventTimestamp), 'MMM d, yyyy h:mm a')}
+                              {format(
+                                new Date(event.eventTimestamp),
+                                "MMM d, yyyy h:mm a"
+                              )}
                             </p>
                           </div>
                           <div className="text-right">
                             <p className="text-xs text-gray-400">
-                              Received {format(new Date(event.receivedAt), 'h:mm a')}
+                              Received{" "}
+                              {format(new Date(event.receivedAt), "h:mm a")}
                             </p>
                           </div>
                         </div>
@@ -277,7 +295,8 @@ export function PackageDetail() {
                             <div className="flex items-center space-x-2 text-sm text-gray-600">
                               <MapPin className="w-4 h-4" />
                               <span>
-                                Location: {event.lat.toFixed(4)}, {event.lon.toFixed(4)}
+                                Location: {event.lat.toFixed(4)},{" "}
+                                {event.lon.toFixed(4)}
                               </span>
                             </div>
                           )}
@@ -286,7 +305,8 @@ export function PackageDetail() {
                             <div className="flex items-center space-x-2 text-sm text-gray-600">
                               <Calendar className="w-4 h-4" />
                               <span>
-                                ETA: {format(new Date(event.eta), 'MMM d, h:mm a')}
+                                ETA:{" "}
+                                {format(new Date(event.eta), "MMM d, h:mm a")}
                               </span>
                             </div>
                           )}
@@ -304,7 +324,9 @@ export function PackageDetail() {
         {pkg.currentLat && pkg.currentLon && (
           <div className="bg-white border rounded-lg shadow-sm">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Current Location</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Current Location
+              </h2>
             </div>
             <div className="flex items-center justify-center h-64 bg-gray-100">
               <div className="text-center">

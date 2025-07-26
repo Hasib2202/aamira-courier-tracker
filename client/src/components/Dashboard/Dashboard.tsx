@@ -1,6 +1,6 @@
 // src/components/Dashboard/Dashboard.tsx
 import React, { useState, useEffect } from 'react';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Search, Filter, AlertTriangle, Package, Clock, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -39,6 +39,10 @@ interface DashboardFilters {
   activeOnly: boolean;
 }
 
+interface PackagesResponse {
+  packages: PackageType[];
+}
+
 export function Dashboard() {
   const [filters, setFilters] = useState<DashboardFilters>({
     search: '',
@@ -46,30 +50,29 @@ export function Dashboard() {
     activeOnly: true,
   });
 
-  const [packages, setPackages] = useState<PackageType[]>([]);
   const { alerts } = useAlerts();
 
-  // Fetch packages with react-query
+  // Fetch packages with react-query v5 syntax
   const {
     data: packagesData,
     isLoading,
     error,
     refetch,
-  } = useQuery(
-    ['packages', filters],
-    () => packageApi.getPackages({
+  } = useQuery<PackagesResponse>({
+    queryKey: ['packages', filters],
+    queryFn: () => packageApi.getPackages({
       search: filters.search || undefined,
       status: filters.status !== 'all' ? filters.status : undefined,
       active_only: filters.activeOnly,
       limit: 100,
     }),
-    {
-      refetchInterval: 30000, // Fallback polling every 30 seconds
-      onSuccess: (data) => {
-        setPackages(data.packages);
-      },
-    }
-  );
+    refetchInterval: 30000,
+    onSuccess: (data) => {
+      // State management handled via the data property directly
+    },
+  });
+
+  const packages = packagesData?.packages || [];
 
   // Handle real-time package updates via WebSocket
   const { lastMessage } = useWebSocket();
@@ -77,42 +80,18 @@ export function Dashboard() {
   useEffect(() => {
     if (lastMessage?.type === 'package_updated') {
       const updatedPackage = lastMessage.data;
-      
-      setPackages(prevPackages => {
-        const existingIndex = prevPackages.findIndex(
-          pkg => pkg.packageId === updatedPackage.packageId
-        );
-
-        if (existingIndex >= 0) {
-          // Update existing package
-          const updated = [...prevPackages];
-          updated[existingIndex] = {
-            ...updated[existingIndex],
-            ...updatedPackage,
-          };
-          return updated;
-        } else if (updatedPackage.isActive) {
-          // Add new active package
-          return [updatedPackage, ...prevPackages];
-        }
-
-        return prevPackages;
-      });
+      refetch(); // Refresh data when updates come through
     }
-  }, [lastMessage]);
+  }, [lastMessage, refetch]);
 
   const handleFilterChange = (newFilters: Partial<DashboardFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   };
 
-  const getStuckPackages = () => {
-    return packages.filter(pkg => {
-      const thirtyMinutes = 30 * 60 * 1000;
-      return pkg.timeSinceLastUpdate > thirtyMinutes && pkg.isActive;
-    });
-  };
-
-  const stuckPackages = getStuckPackages();
+  const stuckPackages = packages.filter(pkg => {
+    const thirtyMinutes = 30 * 60 * 1000;
+    return pkg.timeSinceLastUpdate > thirtyMinutes && pkg.isActive;
+  });
 
   if (error) {
     return (
