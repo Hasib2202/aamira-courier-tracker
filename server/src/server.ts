@@ -19,10 +19,21 @@ dotenv.config();
 
 const app: Express = express();
 const server = createServer(app);
+
+// ✅ FIXED: Allow multiple origins for CORS
+const allowedOrigins = [
+  'http://localhost:5173',                              // Local development
+  'http://localhost:3000',                              // Alternative local port
+  'https://aamira-courier-tracker.vercel.app',          // Your Vercel production URL
+  'https://aamira-courier-client.vercel.app',           // Alternative Vercel URL pattern
+  process.env.CLIENT_URL                                // Environment variable override
+].filter(Boolean); // Remove any undefined values
+
 const io = new SocketIOServer(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    methods: ["GET", "POST"]
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
@@ -35,10 +46,31 @@ const alertService = new AlertService(websocketService);
 
 // Middleware
 app.use(helmet());
+
+// ✅ FIXED: CORS configuration to allow multiple origins
 app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:5173",
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      logger.warn(`CORS blocked request from origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'Accept',
+    'Origin'
+  ]
 }));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -46,7 +78,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.path}`, {
     ip: req.ip,
-    userAgent: req.get('User-Agent')
+    userAgent: req.get('User-Agent'),
+    origin: req.get('Origin')
   });
   next();
 });
@@ -56,7 +89,17 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    allowedOrigins: allowedOrigins
+  });
+});
+
+// Base route
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Aamira Courier API',
+    version: '1.0.0',
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -80,9 +123,10 @@ cron.schedule('*/5 * * * *', () => {
 mongoose.connect(MONGODB_URI)
   .then(() => {
     logger.info('Connected to MongoDB');
+    logger.info('Allowed CORS origins:', allowedOrigins);
     
-    // Start server
-    server.listen(PORT, () => {
+    // Start server - bind to 0.0.0.0 for Render
+    server.listen(PORT, '0.0.0.0', () => {
       logger.info(`Server running on port ${PORT}`);
       logger.info(`WebSocket server initialized`);
     });
